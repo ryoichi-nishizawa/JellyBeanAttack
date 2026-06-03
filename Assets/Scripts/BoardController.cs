@@ -72,7 +72,7 @@ public class BoardController : MonoBehaviour
                 bean.SetColor(newColorIdx, colors[newColorIdx]);
             }
 
-            // 盤面全体の有効性チェック
+            // Check the effectiveness of the entire board.
             while (!HasValidMatchOnBoard())
             {
                 RegenerateAllColorsData();
