@@ -22,13 +22,13 @@ public class UIManager : MonoBehaviour
 
     public void UpdateGameplayUI(int score, float timeRemaining)
     {
-        scoreText.text = $"Score: {score}";
-        timerText.text = $"Time: {Mathf.CeilToInt(timeRemaining)}s";
+        scoreText.text = $"Score : {score}";
+        timerText.text = $"Time : {Mathf.CeilToInt(timeRemaining)}s";
     }
 
     public void ShowGameOver(int finalScore)
     {
-        finalScoreText.text = $"Final Score\n{finalScore}";
+        finalScoreText.text = $"Score : {finalScore}";
         gameOverPanel.SetActive(true);
     }
 
