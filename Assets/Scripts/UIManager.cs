@@ -31,6 +31,7 @@ public class UIManager : MonoBehaviour
     [SerializeField]
     GameManager gameManager = null;
 
+    readonly WaitForSeconds delay50msec = new WaitForSeconds(0.05f);
     readonly WaitForSeconds delay100msec = new WaitForSeconds(0.1f);
 
     public void UpdateGameplayUI(int score, float timeRemaining)
@@ -61,7 +62,7 @@ public class UIManager : MonoBehaviour
         for (int score = 0 ; score < finalScore ; score += gameManager.AdditionalScore)
         {
             finalScoreText.text = $"{score}";
-            yield return null;
+            yield return delay50msec;
         }
 
         finalScoreText.text = $"{finalScore}";
