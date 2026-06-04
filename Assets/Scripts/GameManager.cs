@@ -1,9 +1,16 @@
-using System.Collections;
 using UnityEngine;
 
 public class GameManager : MonoBehaviour
 {
     [Header("Core Settings")]
+    [SerializeField]
+    int additionalScore = 10;
+    public int AdditionalScore
+    {
+        get => additionalScore;
+        private set => additionalScore = value;
+    }
+
     [SerializeField]
     float gameDuration = 60.0f;
 
@@ -21,7 +28,6 @@ public class GameManager : MonoBehaviour
     void Start()
     {
         boardController.OnMatchScoreAwarded += AddScore;
-        boardController.OnInvalidMatchClicked += PlayInvalidAnimation;
         uiManager.RestartButton.onClick.AddListener(StartGame);
         StartGame();
     }
@@ -64,12 +70,7 @@ public class GameManager : MonoBehaviour
             return;
         }
 
-        currentScore += count * 10;
-    }
-
-    void PlayInvalidAnimation(Jellybean bean)
-    {
-        StartCoroutine(AnimateInvalidClick(bean.gameObject));
+        currentScore += count * additionalScore;
     }
 
     void EndGame()
@@ -77,34 +78,5 @@ public class GameManager : MonoBehaviour
         isGameActive = false;
         boardController.SetInputActive(false);
         uiManager.ShowGameOver(currentScore);
-    }
-
-    IEnumerator AnimateInvalidClick(GameObject target)
-    {
-        if (target == null)
-        {
-            yield break;
-        }
-
-        Vector3 originalScale = Vector3.one;
-        Vector3 targetScale = originalScale * 0.8f;
-
-        float elapsed = 0.0f;
-        while (elapsed < 0.05f)
-        {
-            target.transform.localScale = Vector3.Lerp(originalScale, targetScale, elapsed / 0.05f);
-            elapsed += Time.deltaTime;
-            yield return null;
-        }
-
-        elapsed = 0.0f;
-        while (elapsed < 0.05f)
-        {
-            target.transform.localScale = Vector3.Lerp(targetScale, originalScale, elapsed / 0.05f);
-            elapsed += Time.deltaTime;
-            yield return null;
-        }
-
-        target.transform.localScale = originalScale;
     }
 }

@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.UI;
+using System.Collections;
 using TMPro;
 
 public class UIManager : MonoBehaviour
@@ -18,22 +19,54 @@ public class UIManager : MonoBehaviour
     [SerializeField]
     GameObject gameOverPanel = null;
 
-    public Button RestartButton = null;
+    [SerializeField]
+    Button restartButton = null;
+    public Button RestartButton
+    {
+        get => restartButton;
+        private set => restartButton = value;
+    }
+
+    [Header("Module References")]
+    [SerializeField]
+    GameManager gameManager = null;
+
+    readonly WaitForSeconds delay100msec = new WaitForSeconds(0.1f);
 
     public void UpdateGameplayUI(int score, float timeRemaining)
     {
-        scoreText.text = $"Score : {score}";
-        timerText.text = $"Time : {Mathf.CeilToInt(timeRemaining)}s";
+        scoreText.text = $"{score}";
+        timerText.text = $"{Mathf.CeilToInt(timeRemaining)}s";
     }
 
-    public void ShowGameOver(int finalScore)
+    public void ShowGameOver(in int finalScore)
     {
-        finalScoreText.text = $"Score : {finalScore}";
         gameOverPanel.SetActive(true);
+        StartCoroutine(AnimateScoreCoroutine(finalScore));
     }
 
     public void HideGameOver()
     {
         gameOverPanel.SetActive(false);
+    }
+
+    IEnumerator AnimateScoreCoroutine(int finalScore)
+    {
+        RestartButton.gameObject.SetActive(false);
+        finalScoreText.gameObject.SetActive(false);
+
+        yield return delay100msec;
+        finalScoreText.gameObject.SetActive(true);
+
+        for (int score = 0 ; score < finalScore ; score += gameManager.AdditionalScore)
+        {
+            finalScoreText.text = $"{score}";
+            yield return null;
+        }
+
+        finalScoreText.text = $"{finalScore}";
+        yield return delay100msec;
+
+        RestartButton.gameObject.SetActive(true);
     }
 }
