@@ -63,3 +63,12 @@ If given more development time, I would focus on the following features to eleva
 
 * **Documentation & Resources:** 
   Referenced official Unity Documentation for URP setup and standard Wikipedia entries for BFS (Breadth-First Search) implementation structures.
+
+## Gameplay Video
+Check out how the game looks and feels!
+
+![GamePlayDemo1](https://github.com/user-attachments/assets/f59db15a-4492-4868-b324-7ac4339bf4de)
+![GamePlayDemo2](https://github.com/user-attachments/assets/43fa6522-0e56-4c62-9d03-0e4ab4ce7c77)
+
+---
+Enjoy the game!
