@@ -21,60 +21,64 @@ public class BoardController : MonoBehaviour
     [SerializeField]
     Transform boardParent = null;
 
+    readonly Vector2Int[] directions = { Vector2Int.up, Vector2Int.down, Vector2Int.left, Vector2Int.right };
+    bool[,] visitedGrid = null;
+    int[,] colorGrid = null;
     Jellybean[,] board = null;
 
     public event Action<int> OnMatchScoreAwarded = null;
 
+    /// <summary>
+    /// Initializing a new board.
+    /// </summary>
     public void InitializeNewBoard()
     {
         ClearBoard();
+
+        visitedGrid = new bool[rows, columns];
+        colorGrid = new int[rows, columns];
         board = new Jellybean[rows, columns];
 
-        // The loop continues until a board state that is internally valid is created.
-        int[,] tempGrid = new int[rows, columns];
-        do
-        {
-            for (int row = 0; row < rows; row++)
-            {
-                for (int column = 0; column < columns; column++)
-                {
-                    tempGrid[row, column] = UnityEngine.Random.Range(0, colors.Length);
-                }
-            }
-        } while (!HasValidMatchOnGrid(tempGrid));
+        GenerateValidGridData();
 
-        // Create Board data.
+        // Create Jelly bean.
         for (int row = 0; row < rows; row++)
         {
             for (int column = 0; column < columns; column++)
             {
                 GameObject go = Instantiate(GameManager.Instance.JellybeanPrefab, boardParent);
                 Jellybean bean = go.GetComponent<Jellybean>();
-                bean.Setup(row, column, tempGrid[row, column], colors[tempGrid[row, column]]);
+
+                bean.Setup(row, column, colorGrid[row, column], colors[colorGrid[row, column]]);
                 bean.OnClicked += HandleJellybeanClick;
                 board[row, column] = bean;
             }
         }
     }
 
+    /// <summary>
+    /// Click on the jelly bean.
+    /// </summary>
     void HandleJellybeanClick(Jellybean clickedBean)
     {
-        List<Jellybean> group = FindConnectedGroup(clickedBean);
+        var startPos = new Vector2Int(clickedBean.Row, clickedBean.Column);
+        List<Vector2Int> group = FindConnectedGroup(startPos);
+
         if (group.Count >= matchJellybeans)
         {
             OnMatchScoreAwarded?.Invoke(group.Count);
 
-            // Refill only the relevant cells.
-            foreach (Jellybean bean in group)
+            foreach (Vector2Int pos in group)
             {
-                int newColorIndex = UnityEngine.Random.Range(0, colors.Length);
-                bean.PlayMatchAnimation(newColorIndex, colors[newColorIndex]);
+                colorGrid[pos.x, pos.y] = UnityEngine.Random.Range(0, colors.Length);
+                board[pos.x, pos.y].PlayMatchAnimation(colorGrid[pos.x, pos.y], colors[colorGrid[pos.x, pos.y]]);
             }
 
-            // Check the effectiveness of the entire board.
-            while (!HasValidMatchOnBoard())
+            // When there are no matching items.
+            while (!HasValidMatch())
             {
-                RegenerateAllColorsData();
+                GenerateValidGridData();
+                SyncAllViews();
             }
         }
         else
@@ -83,136 +87,105 @@ public class BoardController : MonoBehaviour
         }
     }
 
-    // BFS search on current board data.
-    // https://en.wikipedia.org/wiki/Breadth-first_search
-    List<Jellybean> FindConnectedGroup(Jellybean startBean)
+    /// <summary>
+    /// Randomly generate grid data until a valid match is found.
+    /// </summary>
+    void GenerateValidGridData()
     {
-        List<Jellybean> group = new List<Jellybean>();
-        int targetColor = startBean.ColorIndex;
+        int safety = 0;
+        do
+        {
+            for (int row = 0; row < rows; row++)
+            {
+                for (int column = 0; column < columns; column++)
+                {
+                    colorGrid[row, column] = UnityEngine.Random.Range(0, colors.Length);
+                }
+            }
 
-        bool[,] visited = new bool[rows, columns];
-        Queue<Jellybean> queue = new Queue<Jellybean>();
+            safety++;
+        } while (!HasValidMatch() && safety < 100);
+    }
 
-        queue.Enqueue(startBean);
-        visited[startBean.Row, startBean.Column] = true;
+    /// <summary>
+    /// Reflect all current data.
+    /// </summary>
+    void SyncAllViews()
+    {
+        for (int row = 0; row < rows; row++)
+        {
+            for (int column = 0; column < columns; column++)
+            {
+                int colorIdx = colorGrid[row, column];
+                board[row, column].PlayMatchAnimation(colorIdx, colors[colorIdx]);
+            }
+        }
+    }
 
-        Vector2Int[] directions = { Vector2Int.up, Vector2Int.down, Vector2Int.left, Vector2Int.right };
+    /// <summary>
+    /// Determine if there are any valid matches on the grid.
+    /// </summary>
+    bool HasValidMatch()
+    {
+        Array.Clear(visitedGrid, 0, visitedGrid.Length);
+        for (int row = 0; row < rows; row++)
+        {
+            for (int column = 0; column < columns; column++)
+            {
+                if (!visitedGrid[row, column])
+                {
+                    List<Vector2Int> group = FindConnectedGroup(new Vector2Int(row, column));
+                    if (group.Count >= matchJellybeans)
+                    {
+                        return true;
+                    }
+
+                    foreach (Vector2Int pos in group)
+                    {
+                        visitedGrid[pos.x, pos.y] = true;
+                    }
+                }
+            }
+        }
+
+        return false;
+    }
+
+    /// <summary>
+    /// Returns groups of the same color connected to the specified coordinates.
+    /// </summary>
+    List<Vector2Int> FindConnectedGroup(Vector2Int startPos)
+    {
+        List<Vector2Int> group = new List<Vector2Int>();
+        int targetColor = colorGrid[startPos.x, startPos.y];
+
+        Array.Clear(visitedGrid, 0, visitedGrid.Length);
+        Queue<Vector2Int> queue = new Queue<Vector2Int>();
+
+        queue.Enqueue(startPos);
+        visitedGrid[startPos.x, startPos.y] = true;
 
         while (queue.Count > 0)
         {
-            Jellybean current = queue.Dequeue();
+            Vector2Int current = queue.Dequeue();
             group.Add(current);
 
             foreach (Vector2Int dir in directions)
             {
-                int nextRow = current.Row + dir.x;
-                int nextColumn = current.Column + dir.y;
+                int nextRow = current.x + dir.x;
+                int nextColumn = current.y + dir.y;
                 if (nextRow >= 0 && nextRow < rows && nextColumn >= 0 && nextColumn < columns)
                 {
-                    Jellybean neighbor = board[nextRow, nextColumn];
-                    if (!visited[nextRow, nextColumn] && neighbor.ColorIndex == targetColor)
+                    if (!visitedGrid[nextRow, nextColumn] && colorGrid[nextRow, nextColumn] == targetColor)
                     {
-                        visited[nextRow, nextColumn] = true;
-                        queue.Enqueue(neighbor);
+                        visitedGrid[nextRow, nextColumn] = true;
+                        queue.Enqueue(new Vector2Int(nextRow, nextColumn));
                     }
                 }
             }
         }
 
         return group;
-    }
-
-    bool HasValidMatchOnBoard()
-    {
-        bool[,] checkedCells = new bool[rows, columns];
-        for (int row = 0; row < rows; row++)
-        {
-            for (int column = 0; column < columns; column++)
-            {
-                if (!checkedCells[row, column])
-                {
-                    List<Jellybean> group = FindConnectedGroup(board[row, column]);
-                    if (group.Count >= matchJellybeans)
-                    {
-                        return true;
-                    }
-
-                    foreach (Jellybean b in group)
-                    {
-                        checkedCells[b.Row, b.Column] = true;
-                    }
-                }
-            }
-        }
-
-        return false;
-    }
-
-    void RegenerateAllColorsData()
-    {
-        for (int row = 0; row < rows; row++)
-        {
-            for (int column = 0; column < columns; column++)
-            {
-                int newColorIndex = UnityEngine.Random.Range(0, colors.Length);
-                board[row, column].SetColor(newColorIndex, colors[newColorIndex]);
-            }
-        }
-    }
-
-    // Validation logic for the temporary grid used for initial generation.
-    bool HasValidMatchOnGrid(int[,] grid)
-    {
-        int rowCount = grid.GetLength(0);
-        int columnCount = grid.GetLength(1);
-        bool[,] visited = new bool[rowCount, columnCount];
-
-        for (int row = 0; row < rowCount; row++)
-        {
-            for (int column = 0; column < columnCount; column++)
-            {
-                if (!visited[row, column])
-                {
-                    // Simple temporary search.
-                    int count = 0;
-                    int targetColor = grid[row, column];
-                    Queue<Vector2Int> q = new Queue<Vector2Int>();
-                    List<Vector2Int> currentGroup = new List<Vector2Int>();
-
-                    q.Enqueue(new Vector2Int(row, column));
-                    visited[row, column] = true;
-
-                    while (q.Count > 0)
-                    {
-                        Vector2Int curr = q.Dequeue();
-                        currentGroup.Add(curr);
-                        count++;
-
-                        Vector2Int[] dirs = { Vector2Int.up, Vector2Int.down, Vector2Int.left, Vector2Int.right };
-                        foreach (var dir in dirs)
-                        {
-                            int nextRow = curr.x + dir.x;
-                            int nextColumn = curr.y + dir.y;
-                            if (nextRow >= 0 && nextRow < rowCount && nextColumn >= 0 && nextColumn < columnCount)
-                            {
-                                if (!visited[nextRow, nextColumn] && grid[nextRow, nextColumn] == targetColor)
-                                {
-                                    visited[nextRow, nextColumn] = true;
-                                    q.Enqueue(new Vector2Int(nextRow, nextColumn));
-                                }
-                            }
-                        }
-                    }
-
-                    if (count >= matchJellybeans)
-                    {
-                        return true;
-                    }
-                }
-            }
-        }
-
-        return false;
     }
 
     public void SetInputActive(bool active)
