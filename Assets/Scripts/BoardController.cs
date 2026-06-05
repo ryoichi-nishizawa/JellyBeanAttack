@@ -21,9 +21,6 @@ public class BoardController : MonoBehaviour
     [SerializeField]
     Transform boardParent = null;
 
-    [SerializeField]
-    GameObject jellybeanPrefab = null;
-
     Jellybean[,] board = null;
 
     public event Action<int> OnMatchScoreAwarded = null;
@@ -51,7 +48,7 @@ public class BoardController : MonoBehaviour
         {
             for (int column = 0; column < columns; column++)
             {
-                GameObject go = Instantiate(jellybeanPrefab, boardParent);
+                GameObject go = Instantiate(GameManager.Instance.JellybeanPrefab, boardParent);
                 Jellybean bean = go.GetComponent<Jellybean>();
                 bean.Setup(row, column, tempGrid[row, column], colors[tempGrid[row, column]]);
                 bean.OnClicked += HandleJellybeanClick;
@@ -71,8 +68,7 @@ public class BoardController : MonoBehaviour
             foreach (Jellybean bean in group)
             {
                 int newColorIndex = UnityEngine.Random.Range(0, colors.Length);
-                bean.SetColor(newColorIndex, colors[newColorIndex]);
-                bean.PlayMatchAnimation();
+                bean.PlayMatchAnimation(newColorIndex, colors[newColorIndex]);
             }
 
             // Check the effectiveness of the entire board.

@@ -41,33 +41,37 @@ public class Jellybean : MonoBehaviour
         image.color = color;
     }
 
-    public void PlayMatchAnimation()
+    public void PlayMatchAnimation(int colorIndex, Color color)
     {
-        StartCoroutine(AnimateMatchCoroutine());
+        GameObject effect = Instantiate(GameManager.Instance.MatchEffectPrefab, GameManager.Instance.BoardCanvas.gameObject.transform);
+        effect.transform.position = transform.position;
+
+        StartCoroutine(AnimateMatchCoroutine(colorIndex, color));
     }
 
-    IEnumerator AnimateMatchCoroutine()
+    IEnumerator AnimateMatchCoroutine(int colorIndex, Color color)
     {
-        Vector3 originalScale = Vector3.one;
-        Vector3 targetScale = originalScale * 0.8f;
+        Vector3 targetScale = Vector3.one * 0.0f;
 
         float elapsed = 0.0f;
-        while (elapsed < 0.05f)
+        while (elapsed < 0.35f)
         {
-            gameObject.transform.localScale = Vector3.Lerp(originalScale, targetScale, elapsed / 0.05f);
+            gameObject.transform.localScale = Vector3.Lerp(Vector3.one, targetScale, elapsed / 0.35f);
             elapsed += Time.deltaTime;
             yield return null;
         }
+
+        SetColor(colorIndex, color);
 
         elapsed = 0.0f;
-        while (elapsed < 0.05f)
+        while (elapsed < 0.35f)
         {
-            gameObject.transform.localScale = Vector3.Lerp(targetScale, originalScale, elapsed / 0.05f);
+            gameObject.transform.localScale = Vector3.Lerp(targetScale, Vector3.one, elapsed / 0.35f);
             elapsed += Time.deltaTime;
             yield return null;
         }
 
-        gameObject.transform.localScale = originalScale;
+        gameObject.transform.localScale = Vector3.one;
     }
 
     public void PlayInvalidAnimation()
@@ -77,25 +81,24 @@ public class Jellybean : MonoBehaviour
 
     IEnumerator AnimateInvalidCoroutine()
     {
-        Vector3 originalScale = Vector3.one;
-        Vector3 targetScale = originalScale * 0.8f;
+        Vector3 targetScale = Vector3.one * 0.5f;
 
         float elapsed = 0.0f;
-        while (elapsed < 0.05f)
+        while (elapsed < 0.2f)
         {
-            gameObject.transform.localScale = Vector3.Lerp(originalScale, targetScale, elapsed / 0.05f);
+            gameObject.transform.localScale = Vector3.Lerp(Vector3.one, targetScale, elapsed / 0.2f);
             elapsed += Time.deltaTime;
             yield return null;
         }
 
         elapsed = 0.0f;
-        while (elapsed < 0.05f)
+        while (elapsed < 0.2f)
         {
-            gameObject.transform.localScale = Vector3.Lerp(targetScale, originalScale, elapsed / 0.05f);
+            gameObject.transform.localScale = Vector3.Lerp(targetScale, Vector3.one, elapsed / 0.2f);
             elapsed += Time.deltaTime;
             yield return null;
         }
 
-        gameObject.transform.localScale = originalScale;
+        gameObject.transform.localScale = Vector3.one;
     }
 }
